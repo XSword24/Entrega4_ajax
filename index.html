@@ -61,12 +61,28 @@
         }
         const getAPI = async () => {
             // Completar: Llamar a la API para leer la información guardada en myjson a través de la API
+            //let response = await fletch(localStorage.URL);
+            let res = await fetch (localStorage.URL);
+            return await res.json();
 
           
         }
         const updateAPI = async (peliculas) => {
             // Completar: Actualizar la información a través de la API
+        try {
+           let response = await fetch (localStorage.URL,
+           {    method : 'PUT',
+                headers:{"Content-Type": "application/json",},
+                body : JSON.stringify(peliculas)
+
+           });
+        const {uri} = await response.json();
+            
+           return uri;
+        }catch(err){
+            alert("No se ha podido crear el endpoint.")
         }
+    }
 
  
         // VISTAS
@@ -85,7 +101,11 @@
                        ${peliculas[i].titulo || "<em>Sin título</em>"}
                    </div>
                    <div class="actions">
+                       <button class="show" data-my-id="${i}">ver</button>
                        <button class="edit" data-my-id="${i}">editar</button>
+                       <button class="delete" data-my-id="${i}">borrar</button>
+
+                       
                     </div>
                 </div>\n`;
               i = i + 1;
@@ -93,6 +113,9 @@
 
             view += `<div class="actions">
                         <!--Insertar aquí botones de "Añadir" y "Reset"-->
+                        <button class ="new"> Anadir</button>
+                        <button class ="reset">reset</button>
+
                     </div>`;
 
             return view;
@@ -131,7 +154,7 @@
 
             return `
              <p>
-             
+                La Pelicula <strong> ${pelicula.titulo}</strong> fue dirigido por <strong> ${pelicula.director}</strong>
              
              </p>
              <div class="actions">
@@ -144,9 +167,34 @@
             // ...
 
             return `<h2>Crear Película</h2>
+            
+                <div class="field">
+                Título <br>
+                <input  type="text" id="titulo" placeholder="Título" >
+                </div>
+
+                <div class="field">
+                Director <br>
+                <input  type="text" id="director" placeholder="Director">
+                </div>
+
+            
+                <div class="field">
+                Miniatura <br>
+                <input  type="text" id="miniatura" placeholder="URL de la miniatura" >
+                </div>
+
+
+
+
+
                 <div class="actions">
-                    <button class="index">Volver</button>
+                <button class ="create">crear</button>
+                <button class="index">Volver</button>
                 </div>`;
+                /*<div class="actions">
+                    <button class="index">Volver</button>
+                </div>`;*/
         }
 
 
@@ -164,16 +212,27 @@
             document.getElementById('main').innerHTML = await indexView(mis_peliculas);
         }
 
-        const showContr = (i) => {
+        const showContr = async (i) => {
             // Completar: controlador que muestra la vista showView()
+          // let mis_peliculas = await getAPI() || []
+           let pelicula = mis_peliculas[i];
+           document.getElementById('main').innerHTML = await showView(pelicula);
         }
 
-        const newContr = () => {
+        const newContr = async () => {
             // Completar: controlador que muestra la vista newView()
+            document.getElementById('main').innerHTML = newView();
         }
 
         const createContr = async () => {
             // Completar: controlador que crea una película nueva en el modelo guardado en myjson
+            let t  = document.getElementById('titulo').value;
+            let d  = document.getElementById('director').value;
+            let m  = document.getElementById('miniatura').value;
+            mis_peliculas.push({titulo: t, director: d, "miniatura": m});
+            await updateAPI(mis_peliculas);
+            indexContr();
+
         }
 
         const editContr = (i) => {
@@ -191,10 +250,20 @@
         const deleteContr = async (i) => {
             // Completar:  controlador que actualiza el modelo borrando la película seleccionada
             // Genera diálogo de confirmación: botón Aceptar devuelve true, Cancel false
+            //let mis_peliculas = await getAPI() || [];
+           if(confirm(`Borrar ${mis_peliculas[i].titulo}`)){
+                mis_peliculas.splice(i, 1);
+                 await updateAPI(mis_peliculas);
+                indexContr();
+            }
+
+
         }
 
         const resetContr = async () => {
             // Completar:  controlador que reinicia el modelo guardado en myjson con las películas originales
+           await updateAPI(mis_peliculas_iniciales);
+            indexContr();
         }
 
         // ROUTER de eventos
@@ -205,6 +274,12 @@
             if      (matchEvent(ev, '.index'))  indexContr  ();
             else if (matchEvent(ev, '.edit'))   editContr   (myId(ev));
             else if (matchEvent(ev, '.update')) updateContr (myId(ev));
+            else if (matchEvent(ev, '.show')) showContr (myId(ev));
+            else if (matchEvent(ev, '.new'))    newContr    ();
+            else if (matchEvent(ev, '.create')) createContr ();
+            else if (matchEvent(ev, '.delete')) deleteContr (myId(ev));
+            else if (matchEvent(ev, '.reset'))  resetContr  ();
+            
         })
         
         
